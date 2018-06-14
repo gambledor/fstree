@@ -7,11 +7,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
 	// version is the software version
-	version string = "0.1"
+	version string = "0.2"
 	// author is the software author
 	author   = "Giuseppe Lo Brutto"
 	maxLevel = 1<<32 - 1 // 2^32
@@ -24,6 +25,8 @@ type configuration struct {
 	showDotFiles bool
 	// level to limit the recursion depth
 	level int
+	// to exclude a list of directories comma interleaved
+	exclude string
 }
 
 var (
@@ -39,7 +42,8 @@ func init() {
 	flag.BoolVar(&showVersion, "version", false, "Show current program version")
 	flag.BoolVar(&config.dirOnly, "d", false, "Show directories only ")
 	flag.BoolVar(&config.showDotFiles, "a", false, "Show dot files ")
-	flag.IntVar(&config.level, "l", maxLevel, "Limit the level of recursion depth ")
+	flag.IntVar(&config.level, "l", maxLevel, "Limit the level of recursion depth")
+	flag.StringVar(&config.exclude, "e", "", "Exclude listed directories.\nExample: foo,bar,baz")
 }
 
 func printVersion() {
@@ -92,13 +96,17 @@ func tree(root, indent string, currLevel int) error {
 	var names []string
 	for _, fileInfo := range fileInfos {
 		isDotFile := fileInfo.Name()[0] == '.'
-		if config.dirOnly && fileInfo.IsDir() && !isDotFile {
+		isAppendable := true
+		if config.exclude != "" {
+			isAppendable = strings.Index(config.exclude, fileInfo.Name()) == -1
+		}
+		if isAppendable && config.dirOnly && fileInfo.IsDir() && !isDotFile {
 			names = append(names, fileInfo.Name())
 		}
-		if !config.dirOnly && !isDotFile {
+		if isAppendable && !config.dirOnly && !isDotFile {
 			names = append(names, fileInfo.Name())
 		}
-		if config.showDotFiles && isDotFile {
+		if isAppendable && config.showDotFiles && isDotFile {
 			names = append(names, fileInfo.Name())
 		}
 	}
