@@ -86,7 +86,9 @@ func tree(root, indent string, currLevel int) error {
 		return nil
 	}
 
-	dirCounter++
+	if fileInfo.Name() != "." || fileInfo.Name() != ".." {
+		dirCounter++
+	}
 
 	fileInfos, err := ioutil.ReadDir(root)
 	if err != nil {
